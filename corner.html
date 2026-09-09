@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Corner — Find it nearby</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F4EE;
+    --ink:#171F19;
+    --ink-soft:#4B5750;
+    --line:#DEDACC;
+    --card:#FFFFFF;
+    --green:#2F5233;
+    --green-deep:#1E3A22;
+    --green-mist:#E4EBE1;
+    --brick:#B85C34;
+    --brick-mist:#F3E4D9;
+    --gold:#C79A3D;
+    --red:#B23B32;
+    --radius-s:6px;
+    --radius-m:10px;
+    --radius-l:16px;
+    --shadow: 0 1px 2px rgba(23,31,25,.06), 0 6px 16px -8px rgba(23,31,25,.18);
+    --maxw: 480px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  h1,h2,h3,.display{
+    font-family:'Fraunces', Georgia, serif;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    margin:0;
+    color:var(--ink);
+  }
+  p{margin:0;}
+  button{font-family:inherit;}
+  a{color:inherit;text-decoration:none;}
+  img{display:block;max-width:100%;}
+  ::selection{background:var(--green-mist);}
+  :focus-visible{outline:2px solid var(--green); outline-offset:2px;}
+
+  #app{
+    max-width:var(--maxw);
+    margin:0 auto;
+    min-height:100vh;
+    background:var(--paper);
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 0 40px rgba(0,0,0,0.06);
+  }
+
+  /* ---- Top bar ---- */
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    background:var(--paper);
+    border-bottom:1px solid var(--line);
+    padding:12px 16px 10px;
+  }
+  .topbar-row{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .brand{display:flex; align-items:center; gap:8px; cursor:pointer;}
+  .brand-mark{
+    width:30px;height:30px;border-radius:8px;
+    background:var(--green);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff; font-family:'Fraunces',serif; font-weight:700; font-size:16px;
+    flex-shrink:0;
+  }
+  .brand-name{font-family:'Fraunces',serif; font-weight:600; font-size:19px;}
+  .loc-pill{
+    display:flex; align-items:center; gap:6px;
+    border:1px solid var(--line); background:var(--card);
+    border-radius:999px; padding:6px 12px; font-size:12.5px; color:var(--ink-soft);
+    cursor:pointer; max-width:150px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .role-switch{
+    display:flex; gap:4px; margin-top:10px; background:var(--green-mist); padding:3px; border-radius:999px;
+  }
+  .role-btn{
+    flex:1; border:none; background:transparent; padding:7px 4px; border-radius:999px;
+    font-size:12px; font-weight:600; color:var(--green-deep); cursor:pointer;
+  }
+  .role-btn.active{background:var(--card); box-shadow:var(--shadow);}
+
+  /* ---- Layout helpers ---- */
+  .view{padding:14px 16px 90px;}
+  .section{margin-bottom:26px;}
+  .section-head{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px;}
+  .section-head h2{font-size:17px;}
+  .link-btn{background:none;border:none;color:var(--green); font-weight:600; font-size:13px; cursor:pointer; padding:0;}
+  .muted{color:var(--ink-soft);}
+  .small{font-size:12.5px;}
+
+  /* ---- Search bar ---- */
+  .searchbar{
+    display:flex; align-items:center; gap:8px;
+    background:var(--card); border:1.5px solid var(--line); border-radius:var(--radius-m);
+    padding:12px 14px; cursor:text;
+  }
+  .searchbar input{
+    border:none; outline:none; background:transparent; font-size:15px; width:100%; color:var(--ink); font-family:inherit;
+  }
+  .searchbar input::placeholder{color:#8A9088;}
+  .searchbar svg{flex-shrink:0;}
+
+  /* ---- Hero ---- */
+  .hero{
+    background:linear-gradient(180deg, var(--green-deep), var(--green));
+    color:#fff; border-radius:var(--radius-l); padding:22px 18px 20px; margin-bottom:18px;
+  }
+  .hero h1{color:#fff; font-size:26px; line-height:1.15; margin-bottom:6px;}
+  .hero p{color:#D8E4D6; font-size:13.5px; margin-bottom:16px;}
+  .hero .searchbar{border:none;}
+
+  /* ---- Category chips ---- */
+  .chip-row{display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; -ms-overflow-style:none; scrollbar-width:none;}
+  .chip-row::-webkit-scrollbar{display:none;}
+  .chip{
+    flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:6px;
+    width:66px; cursor:pointer;
+  }
+  .chip .ico{
+    width:52px;height:52px;border-radius:16px; background:var(--card); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center; font-size:22px;
+  }
+  .chip span{font-size:11px; text-align:center; color:var(--ink-soft); font-weight:500; line-height:1.2;}
+
+  /* ---- Filter row ---- */
+  .filter-row{display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; -ms-overflow-style:none; scrollbar-width:none;}
+  .filter-row::-webkit-scrollbar{display:none;}
+  .filter-chip{
+    flex-shrink:0; border:1px solid var(--line); background:var(--card); color:var(--ink);
+    border-radius:999px; padding:7px 13px; font-size:12.5px; font-weight:500; cursor:pointer; white-space:nowrap;
+  }
+  .filter-chip.active{background:var(--green); border-color:var(--green); color:#fff;}
+  .sortbar{display:flex; align-items:center; justify-content:space-between; margin:12px 0 10px;}
+  .select-native{
+    border:1px solid var(--line); background:var(--card); border-radius:var(--radius-s); padding:6px 8px; font-size:12.5px; color:var(--ink);
+  }
+
+  /* ---- Product card ---- */
+  .p-card{
+    display:flex; gap:12px; background:var(--card); border:1px solid var(--line); border-radius:var(--radius-m);
+    padding:12px; margin-bottom:10px; cursor:pointer; transition:border-color .15s;
+  }
+  .p-card:active{border-color:var(--green);}
+  .p-thumb{
+    width:72px;height:72px;border-radius:var(--radius-s); background:var(--green-mist); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:26px; overflow:hidden;
+  }
+  .p-body{flex:1; min-width:0;}
+  .p-title{font-weight:600; font-size:14.5px; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .p-price{font-weight:700; font-size:15.5px; color:var(--green-deep);}
+  .p-meta{display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:5px; font-size:11.5px; color:var(--ink-soft);}
+  .dot{color:var(--line);}
+  .badge{
+    display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:999px;
+  }
+  .badge.avail{background:var(--green-mist); color:var(--green-deep);}
+  .badge.unavail{background:#F1E3E1; color:var(--red);}
+  .badge.low{background:var(--brick-mist); color:var(--brick);}
+  .stars{color:var(--gold); font-size:11.5px; font-weight:700;}
+  .fresh{font-size:10.5px; color:#8A9088; margin-top:3px;}
+
+  /* ---- Shop card ---- */
+  .s-card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius-m); padding:12px; margin-bottom:10px; cursor:pointer;
+  }
+  .s-card-top{display:flex; gap:12px; align-items:center;}
+  .s-thumb{width:52px;height:52px;border-radius:12px; background:var(--brick-mist); display:flex;align-items:center;justify-content:center;font-size:22px; flex-shrink:0;}
+  .verified{color:var(--green); font-size:11px; font-weight:700; display:inline-flex; align-items:center; gap:3px;}
+
+  /* ---- Buttons ---- */
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    border-radius:var(--radius-s); padding:12px 16px; font-weight:600; font-size:14px; cursor:pointer; border:1px solid transparent;
+    width:100%;
+  }
+  .btn-primary{background:var(--green); color:#fff;}
+  .btn-primary:active{background:var(--green-deep);}
+  .btn-outline{background:var(--card); color:var(--ink); border-color:var(--line);}
+  .btn-ghost{background:transparent; color:var(--green); border:none; padding:8px;}
+  .btn-danger{background:#fff; color:var(--red); border-color:#E7C9C6;}
+  .btn-row{display:flex; gap:8px;}
+  .btn-row .btn{width:auto; flex:1;}
+  .btn-sm{padding:8px 12px; font-size:13px; width:auto;}
+  .btn[disabled]{opacity:.45; cursor:not-allowed;}
+
+  /* ---- Bottom nav ---- */
+  .bottomnav{
+    position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+    width:100%; max-width:var(--maxw);
+    background:var(--card); border-top:1px solid var(--line);
+    display:flex; z-index:50;
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+  }
+  .nav-item{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+    border:none; background:none; padding:6px 2px; cursor:pointer; color:#9AA097; position:relative;
+  }
+  .nav-item.active{color:var(--green);}
+  .nav-item .nlabel{font-size:10.5px; font-weight:600;}
+  .nav-badge{
+    position:absolute; top:2px; right:22%; background:var(--brick); color:#fff; font-size:9px; font-weight:700;
+    min-width:15px; height:15px; border-radius:999px; display:flex; align-items:center; justify-content:center; padding:0 3px;
+  }
+
+  /* ---- Detail header / back ---- */
+  .backbar{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+  .backbtn{
+    width:34px;height:34px;border-radius:999px; border:1px solid var(--line); background:var(--card);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+  }
+  .gallery{
+    width:100%; aspect-ratio:4/3; border-radius:var(--radius-l); background:var(--green-mist);
+    display:flex; align-items:center; justify-content:center; font-size:56px; margin-bottom:14px; overflow:hidden;
+  }
+  .kv-row{display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); font-size:13.5px;}
+  .kv-row:last-child{border-bottom:none;}
+
+  /* ---- Cards / panels ---- */
+  .panel{background:var(--card); border:1px solid var(--line); border-radius:var(--radius-m); padding:14px; margin-bottom:14px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:12.5px; font-weight:600; margin-bottom:5px; color:var(--ink-soft);}
+  .field .req{color:var(--brick);}
+  .field input, .field select, .field textarea{
+    width:100%; border:1px solid var(--line); border-radius:var(--radius-s); padding:11px 12px; font-size:14.5px;
+    background:var(--card); color:var(--ink); font-family:inherit;
+  }
+  .field textarea{resize:vertical; min-height:70px;}
+  .field-hint{font-size:11.5px; color:#9AA097; margin-top:4px;}
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; padding:10px 0;}
+  .switch{width:42px;height:24px;border-radius:999px; background:var(--line); position:relative; cursor:pointer; flex-shrink:0; border:none;}
+  .switch.on{background:var(--green);}
+  .switch::after{content:''; position:absolute; top:3px; left:3px; width:18px;height:18px;border-radius:50%; background:#fff; transition:left .15s;}
+  .switch.on::after{left:21px;}
+
+  /* ---- Empty / error states ---- */
+  .empty-state{text-align:center; padding:50px 20px;}
+  .empty-state .emoji{font-size:40px; margin-bottom:10px;}
+  .empty-state h3{font-size:16px; margin-bottom:6px;}
+  .empty-state p{font-size:13px; color:var(--ink-soft); margin-bottom:18px;}
+  .empty-state .btn-row{max-width:280px; margin:0 auto; flex-direction:column;}
+
+  .skeleton{background:linear-gradient(90deg,#EDEAE0 25%,#F5F3EC 37%,#EDEAE0 63%); background-size:400% 100%; animation:shimmer 1.3s infinite; border-radius:var(--radius-s);}
+  @keyframes shimmer{0%{background-position:100% 50%;}100%{background-position:0 50%;}}
+
+  .toast{
+    position:fixed; bottom:76px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff;
+    padding:10px 18px; border-radius:999px; font-size:13px; font-weight:500; z-index:99; box-shadow:var(--shadow);
+    max-width:calc(var(--maxw) - 40px); text-align:center;
+  }
+
+  /* ---- Chat ---- */
+  .conv-item{display:flex; gap:10px; padding:12px 0; border-bottom:1px solid var(--line); cursor:pointer; align-items:center;}
+  .conv-ico{width:44px;height:44px;border-radius:12px; background:var(--brick-mist); display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0;}
+  .conv-body{flex:1; min-width:0;}
+  .conv-top{display:flex; justify-content:space-between; gap:6px;}
+  .conv-name{font-weight:600; font-size:14px;}
+  .conv-time{font-size:11px; color:#9AA097;}
+  .conv-preview{font-size:12.5px; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;}
+  .unread-dot{width:9px;height:9px;border-radius:50%; background:var(--brick); flex-shrink:0;}
+
+  .chat-screen{display:flex; flex-direction:column; height:calc(100vh - 0px);}
+  .chat-messages{flex:1; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:8px;}
+  .msg{max-width:78%; padding:9px 12px; border-radius:14px; font-size:13.5px; line-height:1.4;}
+  .msg.in{background:var(--card); border:1px solid var(--line); align-self:flex-start; border-bottom-left-radius:4px;}
+  .msg.out{background:var(--green); color:#fff; align-self:flex-end; border-bottom-right-radius:4px;}
+  .msg-time{font-size:9.5px; opacity:.65; margin-top:3px;}
+  .chat-input-row{display:flex; gap:8px; padding:10px 12px; border-top:1px solid var(--line); background:var(--paper); align-items:center;}
+  .chat-input-row input{flex:1; border:1px solid var(--line); border-radius:999px; padding:11px 15px; font-size:14px; font-family:inherit;}
+  .sendbtn{width:40px;height:40px;border-radius:50%; background:var(--green); border:none; color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;}
+  .ref-card{display:flex; gap:8px; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:var(--radius-s); padding:8px 10px; font-size:12px; margin:8px 16px 0;}
+
+  /* ---- Reviews ---- */
+  .review{padding:12px 0; border-bottom:1px solid var(--line);}
+  .review:last-child{border-bottom:none;}
+  .review-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;}
+  .avatar{width:26px;height:26px;border-radius:50%; background:var(--green-mist); color:var(--green-deep); font-size:11px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; margin-right:6px;}
+
+  /* ---- Table (admin) ---- */
+  .admin-stat{background:var(--card); border:1px solid var(--line); border-radius:var(--radius-m); padding:14px; text-align:center;}
+  .admin-stat .num{font-family:'Fraunces',serif; font-size:24px; font-weight:600; color:var(--green-deep);}
+  .admin-stat .lbl{font-size:11px; color:var(--ink-soft); margin-top:2px;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .list-row{display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid var(--line); font-size:13px; gap:10px;}
+  .list-row:last-child{border-bottom:none;}
+  .status-tag{font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:999px;}
+  .status-new{background:var(--green-mist); color:var(--green-deep);}
+  .status-verified{background:#DCEBF0; color:#26606E;}
+  .status-suspended{background:#F1E3E1; color:var(--red);}
+  .status-pending{background:var(--brick-mist); color:var(--brick);}
+
+  .modal-bg{position:fixed; inset:0; background:rgba(23,31,25,.45); z-index:80; display:flex; align-items:flex-end; justify-content:center;}
+  .modal-sheet{
+    width:100%; max-width:var(--maxw); background:var(--paper); border-radius:20px 20px 0 0; padding:18px 16px calc(18px + env(safe-area-inset-bottom));
+    max-height:85vh; overflow-y:auto;
+  }
+  .sheet-handle{width:36px; height:4px; background:var(--line); border-radius:999px; margin:0 auto 14px;}
+  .list-tap{display:flex; align-items:center; justify-content:space-between; padding:13px 0; border-bottom:1px solid var(--line); cursor:pointer; font-size:14.5px;}
+  .list-tap:last-child{border-bottom:none;}
+
+  .fab{
+    position:fixed; bottom:78px; left:50%; transform:translateX(calc(-50% + 190px)); z-index:45;
+    width:52px;height:52px;border-radius:50%; background:var(--brick); color:#fff; border:none; box-shadow:var(--shadow);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:24px;
+  }
+  @media (max-width:400px){ .fab{transform:translateX(calc(-50% + 155px));} }
+
+  .test-checklist{font-size:12px; line-height:1.9;}
+  .test-checklist .grp{font-weight:700; margin-top:12px; color:var(--green-deep);}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* =========================================================================
+   CORNER — local shop discovery platform (front-end prototype)
+   -------------------------------------------------------------------------
+   Everything below simulates a real backend with an in-memory data store
+   (`DB`). In production, DB would be replaced by real API calls to a
+   server backed by a relational database (see README notes at the bottom
+   of this file / the accompanying summary for the intended architecture).
+   All actions here (add product, send message, submit review, moderate...)
+   actually mutate DB and re-render from it — nothing is a fake button.
+   ========================================================================= */
+
+// ---------- Utilities ----------
+const uid = (p='id') => p + '_' + Math.random().toString(36).slice(2,9);
+const now = () => Date.now();
+const fmtMoney = (n, cur='₹') => cur + Number(n).toLocaleString('en-IN');
+function timeAgo(ts){
+  const s = Math.floor((now()-ts)/1000);
+  if(s<60) return 'just now';
+  const m = Math.floor(s/60); if(m<60) return m+' min ago';
+  const h = Math.floor(m/60); if(h<24) return h+' hr'+(h>1?'s':'')+' ago';
+  const d = Math.floor(h/24); if(d<7) return d+' day'+(d>1?'s':'')+' ago';
+  return new Date(ts).toLocaleDateString();
+}
+function haversine(lat1,lon1,lat2,lon2){
+  const R=6371, toRad=x=>x*Math.PI/180;
+  const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
+  const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ---------- Seed "database" (demo data — clearly labeled, not real listings) ----------
+const CENTER = {lat:19.0760, lng:72.8777}; // demo city center (customer's default area)
+
+const CATEGORIES = [
+  {id:'electronics', name:'Electronics', icon:'🔌'},
+  {id:'grocery', name:'Grocery', icon:'🥬'},
+  {id:'clothing', name:'Clothing', icon:'👕'},
+  {id:'hardware', name:'Hardware', icon:'🔧'},
+  {id:'bakery', name:'Bakery', icon:'🥐'},
+  {id:'pharmacy', name:'Pharmacy', icon:'💊'},
+  {id:'stationery', name:'Stationery', icon:'✏️'},
+  {id:'furniture', name:'Furniture', icon:'🪑'},
+];
+
+function mkShop(o){ return Object.assign({
+  id: uid('shop'), rating:0, reviewCount:0, verification:'new', createdAt: now()-Math.floor(Math.random()*9e8),
+  hours:'9:00 AM – 9:00 PM', photos:[], lat: CENTER.lat + (Math.random()-0.5)*0.04, lng: CENTER.lng + (Math.random()-0.5)*0.04,
+}, o); }
+
+const DB = {
+  users: [
+    {id:'u_customer', role:'customer', name:'You (Customer)', email:'you@example.com'},
+    {id:'u_shopkeeper', role:'shopkeeper', name:'You (Shopkeeper)', email:'shop@example.com', shopId:null},
+    {id:'u_admin', role:'admin', name:'You (Admin)', email:'admin@example.com'},
+  ],
+  currentUserByRole: {customer:'u_customer', shopkeeper:'u_shopkeeper', admin:'u_admin'},
+  customerLocation: {label:'Bandra West, Mumbai', lat:CENTER.lat, lng:CENTER.lng, permission:'unset'},
+  shops: [],
+  products: [],
+  reviews: [],
+  favorites: [], // {userId, type:'product'|'shop', id}
+  conversations: [], // {id, customerId, shopId, productId, messages:[], reportedBy:[]}
+  requests: [], // {id, customerId, name, description, radius, createdAt, responses:[]}
+  reports: [], // {id, type, targetId, reason, status, createdAt}
+  notifications: [], // {id, userId, text, read, createdAt}
+};
+
+(function seed(){
+  const s1 = mkShop({name:'Kadam Electronics', category:'electronics', ownerId:'u_shopkeeper', description:'Family-run electronics store, 20+ years in the neighbourhood. Genuine products with bills.', address:'12 SV Road, Bandra West', verification:'verified'});
+  const s2 = mkShop({name:'Green Basket Grocers', category:'grocery', ownerId:'u_owner2', description:'Fresh produce, daily essentials and local staples, restocked every morning.', address:'4 Hill Road, Bandra West', verification:'verified'});
+  const s3 = mkShop({name:'Studio Thread Clothing', category:'clothing', ownerId:'u_owner3', description:'Everyday and festive wear for the whole family.', address:'22 Linking Road, Bandra West', verification:'active'});
+  const s4 = mkShop({name:'Patel Hardware & Tools', category:'hardware', ownerId:'u_owner4', description:'Tools, fittings and hardware supplies for home and workshop.', address:'8 Turner Road, Bandra West', verification:'verified'});
+  const s5 = mkShop({name:'Morning Loaf Bakery', category:'bakery', ownerId:'u_owner5', description:'Fresh bread and pastries baked daily from 6 AM.', address:'3 Chapel Road, Bandra West', verification:'new'});
+  const s6 = mkShop({name:'Wellness Corner Pharmacy', category:'pharmacy', ownerId:'u_owner6', description:'Licensed pharmacy with home delivery for regular medication.', address:'19 SV Road, Bandra West', verification:'verified'});
+  DB.shops.push(s1,s2,s3,s4,s5,s6);
+  DB.users.find(u=>u.id==='u_shopkeeper').shopId = s1.id;
+
+  function mkProd(shopId, name, price, avail, extra={}){
+    return {
+      id: uid('prod'), shopId, name, price, currency:'₹', availability: avail,
+      lastUpdated: now() - Math.floor(Math.random()*1000*60*400),
+      description: extra.description || '', brand: extra.brand||'', model: extra.model||'',
+      condition: extra.condition||'New', category: extra.category || DB.shops.find(s=>s.id===shopId).category,
+      icon: extra.icon || '🏷️',
+    };
+  }
+  DB.products.push(
+    mkProd(s1.id,'Wireless Headphones', 1499,'in_stock',{brand:'SoundCore', model:'Q20', description:'Over-ear wireless headphones, 30 hr battery, noise isolation.', icon:'🎧'}),
+    mkProd(s1.id,'Wireless Headphones', 1799,'low_stock',{brand:'SoundCore', model:'Q30 Pro', description:'Upgraded ANC version with carry case.', icon:'🎧'}),
+    mkProd(s1.id,'USB-C Fast Charger 33W', 799,'in_stock',{brand:'Anker', description:'Compact GaN charger, works with most phones and tablets.', icon:'🔌'}),
+    mkProd(s1.id,'Bluetooth Speaker', 2299,'out_of_stock',{brand:'JBL', model:'Go 3', description:'Portable waterproof speaker.', icon:'🔊'}),
+    mkProd(s2.id,'Basmati Rice 5kg', 620,'in_stock',{brand:'India Gate', description:'Aged basmati rice, 5kg pack.', icon:'🍚'}),
+    mkProd(s2.id,'Organic Tomatoes 1kg', 60,'in_stock',{description:'Locally sourced, picked this morning.', icon:'🍅'}),
+    mkProd(s2.id,'Cold-pressed Groundnut Oil 1L', 240,'low_stock',{icon:'🫙'}),
+    mkProd(s3.id,'Cotton Kurta', 899,'in_stock',{brand:'Studio Thread', description:'Handloom cotton, unstitched collar, sizes S–XXL.', icon:'👕'}),
+    mkProd(s3.id,'Denim Jacket', 1999,'in_stock',{description:'Classic fit, stonewash finish.', icon:'🧥'}),
+    mkProd(s4.id,'Cordless Drill Machine', 3499,'in_stock',{brand:'Bosch', model:'GSB 120', description:'13mm chuck, includes battery and charger.', icon:'🛠️'}),
+    mkProd(s4.id,'Hex Key Set (25pc)', 349,'in_stock',{icon:'🔧'}),
+    mkProd(s4.id,'PVC Pipe 1 inch (3m)', 180,'low_stock',{icon:'🪠'}),
+    mkProd(s5.id,'Sourdough Loaf', 220,'in_stock',{description:'48-hour fermented, baked fresh every morning.', icon:'🍞'}),
+    mkProd(s5.id,'Butter Croissant', 90,'in_stock',{icon:'🥐'}),
+    mkProd(s6.id,'Paracetamol 500mg (strip of 10)', 22,'in_stock',{icon:'💊'}),
+    mkProd(s6.id,'Digital Thermometer', 199,'in_stock',{brand:'Dr Trust', icon:'🌡️'}),
+  );
+
+  DB.reviews.push(
+    {id:uid('rev'), shopId:s1.id, userId:'u_c2', userName:'Aisha K.', rating:5, text:'Bought headphones here, honest pricing and they showed me the bill.', date: now()-1000*60*60*24*3, reply:null},
+    {id:uid('rev'), shopId:s1.id, userId:'u_c3', userName:'Rohan M.', rating:4, text:'Good stock of accessories. A bit crowded on weekends.', date: now()-1000*60*60*24*10, reply:'Thanks for the feedback, Rohan! We are adding a second counter for weekends.'},
+    {id:uid('rev'), shopId:s2.id, userId:'u_c4', userName:'Neha S.', rating:5, text:'Vegetables are always fresh, delivered within the hour.', date: now()-1000*60*60*24*1, reply:null},
+    {id:uid('rev'), shopId:s4.id, userId:'u_c5', userName:'Imran V.', rating:4, text:'Helped me find the right drill bit for my wall type.', date: now()-1000*60*60*24*20, reply:null},
+  );
+  function recalcRating(shopId){
+    const rs = DB.reviews.filter(r=>r.shopId===shopId);
+    const shop = DB.shops.find(s=>s.id===shopId);
+    shop.reviewCount = rs.length;
+    shop.rating = rs.length ? Math.round((rs.reduce((a,b)=>a+b.rating,0)/rs.length)*10)/10 : 0;
+  }
+  DB.shops.forEach(s=>recalcRating(s.id));
+
+  // One seeded conversation so the chat view isn't empty on first load
+  const conv = {id:uid('conv'), customerId:'u_customer', shopId:s1.id, productId: DB.products.find(p=>p.shopId===s1.id).id, unreadForCustomer:1, unreadForShop:0, messages:[
+    {sender:'shop', text:'Hi! Yes, the Wireless Headphones are in stock. Would you like to reserve one?', time: now()-1000*60*40},
+  ]};
+  DB.conversations.push(conv);
+  window._recalcRating = recalcRating;
+})();
+
+// ---------- App state ----------
+const State = {
+  role: 'customer',
+  view: 'home',
+  params: {},
+  history: [],
+  search: { q:'', category:null, filters:{openNow:false, availOnly:false, minRating:0, maxDistance:20, priceMax:null}, sort:'recommended' },
+  toast: null,
+};
+
+function nav(view, params={}, replace=false){
+  if(!replace) State.history.push({view: State.view, params: State.params});
+  State.view = view; State.params = params;
+  window.scrollTo(0,0);
+  render();
+}
+function back(){
+  const h = State.history.pop();
+  if(h){ State.view = h.view; State.params = h.params; } else { State.view='home'; }
+  render();
+}
+function showToast(msg){
+  State.toast = msg; render();
+  setTimeout(()=>{ if(State.toast===msg){ State.toast=null; render(); } }, 2200);
+}
+function currentUser(){ return DB.users.find(u=>u.id===DB.currentUserByRole[State.role]); }
+
+// ---------- Icon helpers (inline SVG, no external deps) ----------
+const ICONS = {
+  search: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8A9088" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>`,
+  back: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#171F19" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>`,
+  pin: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4B5750" stroke-width="2"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>`,
+  home: `<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5L12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>`,
+  compass: `<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-2 6-6 2 2-6 6-2z"/></svg>`,
+  chat: `<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.9 8.4A8.9 8.9 0 0 1 4 18l-2 2 1.2-3.6A8.4 8.4 0 1 1 21 11.5z"/></svg>`,
+  user: `<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>`,
+  send: `<svg width="17" height="17" viewBox="0 0 24 24" fill="#fff"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg>`,
+  heart: (filled)=>`<svg width="18" height="18" viewBox="0 0 24 24" fill="${filled?'#B85C34':'none'}" stroke="${filled?'#B85C34':'#4B5750'}" stroke-width="2"><path d="M12 21s-7.5-4.7-10-9.3C.4 8 2 4 6 4c2 0 3.5 1 6 3.5C14.5 5 16 4 18 4c4 0 5.6 4 4 7.7C19.5 16.3 12 21 12 21z"/></svg>`,
+};
+
+// ---------- Search / filter logic ----------
+function distanceFor(shop){ return haversine(DB.customerLocation.lat, DB.customerLocation.lng, shop.lat, shop.lng); }
+function isShopOpenNow(){ return true; } // demo: hours parsing simplified; architecture supports real hours later
+
+function searchResults(){
+  const q = State.search.q.trim().toLowerCase();
+  const f = State.search.filters;
+  let items = DB.products.map(p => ({p, shop: DB.shops.find(s=>s.id===p.shopId)}));
+
+  if(State.search.category) items = items.filter(x => x.p.category === State.search.category);
+  if(q){
+    items = items.filter(x => {
+      const hay = [x.p.name, x.p.brand, x.p.model, x.p.description, x.shop.name].join(' ').toLowerCase();
+      return q.split(' ').every(term => hay.includes(term));
+    });
+  }
+  items = items.map(x => Object.assign({}, x, {dist: distanceFor(x.shop)}));
+  items = items.filter(x => x.dist <= f.maxDistance);
+  if(f.availOnly) items = items.filter(x => x.p.availability !== 'out_of_stock');
+  if(f.minRating) items = items.filter(x => x.shop.rating >= f.minRating);
+  if(f.priceMax) items = items.filter(x => x.p.price <= f.priceMax);
+  if(f.openNow) items = items.filter(() => isShopOpenNow());
+
+  switch(State.search.sort){
+    case 'nearest': items.sort((a,b)=>a.dist-b.dist); break;
+    case 'price_low': items.sort((a,b)=>a.p.price-b.p.price); break;
+    case 'rating': items.sort((a,b)=>b.shop.rating-a.shop.rating); break;
+    case 'recent': items.sort((a,b)=>b.p.lastUpdated-a.p.lastUpdated); break;
+    default: items.sort((a,b)=> (b.shop.rating - a.shop.rating*0.3) - a.dist*0.05 - (a.dist-b.dist)); // transparent blended default
+  }
+  return items;
+}
+
+// ---------- Rendering ----------
+function render(){
+  const root = document.getElementById('app');
+  root.innerHTML = topbarHtml() + viewHtml() + (needsBottomNav()?bottomNavHtml():'') + (State.toast?`<div class="toast">${escapeHtml(State.toast)}</div>`:'');
+  bindEvents(root);
+  const modalHost = document.getElementById('modal-root');
+  if(modalHost) modalHost.innerHTML = modalHtml();
+  if(document.getElementById('modal-root')) bindEvents(document.getElementById('modal-root'));
+}
+
+function needsBottomNav(){
+  return !['chat-thread'].includes(State.view);
+}
+
+function topbarHtml(){
+  if(State.view==='chat-thread') return ''; // chat gets its own full-screen header
+  const roleLabel = {customer:'Customer', shopkeeper:'Shopkeeper', admin:'Admin'};
+  return `
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="brand" data-nav="home">
+        <div class="brand-mark">C</div>
+        <div class="brand-name">Corner</div>
+      </div>
+      ${State.role==='customer' ? `<div class="loc-pill" data-open="location">${ICONS.pin} <span>${escapeHtml(DB.customerLocation.label)}</span></div>` : `<div class="loc-pill" style="cursor:default;">${roleLabel[State.role]} view</div>`}
+    </div>
+    <div class="role-switch">
+      ${['customer','shopkeeper','admin'].map(r=>`<button class="role-btn ${State.role===r?'active':''}" data-role="${r}">${roleLabel[r]}</button>`).join('')}
+    </div>
+  </div>`;
+}
+
+function bottomNavHtml(){
+  if(State.role==='customer'){
+    const unread = DB.conversations.filter(c=>c.customerId===currentUser().id && c.unreadForCustomer>0).length;
+    const items = [
+      {id:'home', icon:ICONS.home, label:'Home'},
+      {id:'search', icon:ICONS.compass, label:'Search'},
+      {id:'requests', icon:'📝', label:'Requests', raw:true},
+      {id:'chat-list', icon:ICONS.chat, label:'Chat', badge:unread},
+      {id:'account', icon:ICONS.user, label:'Account'},
+    ];
+    return navBar(items);
+  }
+  if(State.role==='shopkeeper'){
+    const shopId = currentUser().shopId;
+    const unread = DB.conversations.filter(c=>c.shopId===shopId && c.unreadForShop>0).length;
+    const items = [
+      {id:'sk-dashboard', icon:ICONS.home, label:'Dashboard'},
+      {id:'sk-products', icon:'📦', label:'Products', raw:true},
+      {id:'sk-requests', icon:'📝', label:'Requests', raw:true},
+      {id:'chat-list', icon:ICONS.chat, label:'Chat', badge:unread},
+      {id:'sk-settings', icon:ICONS.user, label:'Shop'},
+    ];
+    return navBar(items);
+  }
+  const items = [
+    {id:'admin-dashboard', icon:ICONS.home, label:'Overview'},
+    {id:'admin-shops', icon:'🏬', label:'Shops', raw:true},
+    {id:'admin-reports', icon:'🚩', label:'Reports', raw:true},
+    {id:'admin-reviews', icon:'⭐', label:'Reviews', raw:true},
+  ];
+  return navBar(items);
+}
+function navBar(items){
+  return `<div class="bottomnav">${items.map(it=>`
+    <button class="nav-item ${State.view===it.id?'active':''}" data-nav="${it.id}">
+      ${it.badge?`<span class="nav-badge">${it.badge}</span>`:''}
+      ${it.raw?`<span style="font-size:20px;line-height:1">${it.icon}</span>`:it.icon}
+      <span class="nlabel">${it.label}</span>
+    </button>`).join('')}</div>`;
+}
+
+function viewHtml(){
+  switch(State.view){
+    case 'home': return State.role==='customer'?homeView():State.role==='shopkeeper'?skDashboard():adminDashboard();
+    case 'search': return searchView();
+    case 'product': return productView();
+    case 'shop': return shopView();
+    case 'requests': return requestsView();
+    case 'new-request': return newRequestView();
+    case 'account': return accountView();
+    case 'favorites': return favoritesView();
+    case 'my-requests': return myRequestsView();
+    case 'chat-list': return chatListView();
+    case 'chat-thread': return chatThreadView();
+    case 'sk-dashboard': return skDashboard();
+    case 'sk-products': return skProductsView();
+    case 'sk-product-form': return skProductFormView();
+    case 'sk-requests': return skRequestsView();
+    case 'sk-settings': return skSettingsView();
+    case 'sk-onboarding': return skOnboardingView();
+    case 'admin-dashboard': return adminDashboard();
+    case 'admin-shops': return adminShopsView();
+    case 'admin-reports': return adminReportsView();
+    case 'admin-reviews': return adminReviewsView();
+    default: return homeView();
+  }
+}
+
+// ---------- CUSTOMER: Home ----------
+function homeView(){
+  const nearShops = DB.shops.map(s=>({s,dist:distanceFor(s)})).sort((a,b)=>a.dist-b.dist).slice(0,4);
+  const trending = DB.products.slice().sort((a,b)=>b.lastUpdated-a.lastUpdated).slice(0,4);
+  return `<div class="view">
+    <div class="hero">
+      <h1>Find what you need,<br>nearby.</h1>
+      <p>Search products from real local shops around ${escapeHtml(DB.customerLocation.label.split(',')[0])}.</p>
+      <div class="searchbar" data-open="search-focus" style="background:#fff;">
+        ${ICONS.search}
+        <input id="hero-search" placeholder="Search for a product, brand or shop..." readonly>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>Browse categories</h2></div>
+      <div class="chip-row">
+        ${CATEGORIES.map(c=>`<div class="chip" data-cat="${c.id}"><div class="ico">${c.icon}</div><span>${c.name}</span></div>`).join('')}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>Shops near you</h2><button class="link-btn" data-nav="search">See all</button></div>
+      ${nearShops.map(x=>shopCard(x.s, x.dist)).join('')}
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>Recently updated</h2><button class="link-btn" data-nav="search">See all</button></div>
+      ${trending.map(p=>productCard(p, DB.shops.find(s=>s.id===p.shopId))).join('')}
+    </div>
+
+    <div class="panel" style="text-align:center;">
+      <p class="small muted" style="margin-bottom:10px;">Can't find a product nearby?</p>
+      <button class="btn btn-outline" data-nav="new-request">Request a product</button>
+    </div>
+  </div>`;
+}
+
+function productCard(p, shop){
+  const dist = distanceFor(shop);
+  const availBadge = p.availability==='in_stock' ? `<span class="badge avail">🟢 Available</span>` :
+                      p.availability==='low_stock' ? `<span class="badge low">🟡 Low stock</span>` :
+                      `<span class="badge unavail">🔴 Out of stock</span>`;
+  return `<div class="p-card" data-nav="product" data-id="${p.id}">
+    <div class="p-thumb">${p.icon||'🏷️'}</div>
+    <div class="p-body">
+      <div class="p-title">${escapeHtml(p.name)}</div>
+      <div class="p-price">${fmtMoney(p.price)}</div>
+      <div class="p-meta">
+        <span>${escapeHtml(shop.name)}</span><span class="dot">·</span><span>📍 ${dist.toFixed(1)} km</span><span class="dot">·</span><span class="stars">★ ${shop.rating||'—'}</span>
+      </div>
+      <div class="p-meta">${availBadge}</div>
+      <div class="fresh">Price updated ${timeAgo(p.lastUpdated)}</div>
+    </div>
+  </div>`;
+}
+function shopCard(shop, dist){
+  dist = dist ?? distanceFor(shop);
+  return `<div class="s-card" data-nav="shop" data-id="${shop.id}">
+    <div class="s-card-top">
+      <div class="s-thumb">${CATEGORIES.find(c=>c.id===shop.category)?.icon||'🏬'}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="p-title" style="max-width:none;">${escapeHtml(shop.name)}</span>
+          ${shop.verification==='verified'?`<span class="verified">✓</span>`:''}
+        </div>
+        <div class="p-meta"><span class="stars">★ ${shop.rating||'New'}</span>${shop.reviewCount?`<span class="dot">·</span><span>${shop.reviewCount} reviews</span>`:''}<span class="dot">·</span><span>📍 ${dist.toFixed(1)} km</span></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ---------- CUSTOMER: Search ----------
+function searchView(){
+  const results = searchResults();
+  const f = State.search.filters;
+  return `<div class="view">
+    <div class="searchbar" style="margin-bottom:12px;">
+      ${ICONS.search}
+      <input id="search-input" placeholder="Search products, brands, shops..." value="${escapeHtml(State.search.q)}">
+    </div>
+    <div class="filter-row" style="margin-bottom:6px;">
+      <button class="filter-chip ${!State.search.category?'active':''}" data-setcat="">All categories</button>
+      ${CATEGORIES.map(c=>`<button class="filter-chip ${State.search.category===c.id?'active':''}" data-setcat="${c.id}">${c.icon} ${c.name}</button>`).join('')}
+    </div>
+    <div class="filter-row">
+      <button class="filter-chip ${f.availOnly?'active':''}" data-toggle="availOnly">In stock only</button>
+      <button class="filter-chip ${f.openNow?'active':''}" data-toggle="openNow">Open now</button>
+      <button class="filter-chip ${f.minRating>=4?'active':''}" data-toggle="minRating">4★ &amp; up</button>
+      <button class="filter-chip ${f.maxDistance<=5?'active':''}" data-toggle="near">Within 5 km</button>
+    </div>
+    <div class="sortbar">
+      <span class="small muted">${results.length} result${results.length!==1?'s':''}</span>
+      <select class="select-native" id="sort-select">
+        <option value="recommended" ${State.search.sort==='recommended'?'selected':''}>Recommended</option>
+        <option value="nearest" ${State.search.sort==='nearest'?'selected':''}>Nearest</option>
+        <option value="price_low" ${State.search.sort==='price_low'?'selected':''}>Lowest price</option>
+        <option value="rating" ${State.search.sort==='rating'?'selected':''}>Highest rating</option>
+        <option value="recent" ${State.search.sort==='recent'?'selected':''}>Recently updated</option>
+      </select>
+    </div>
+    ${results.length ? results.map(x=>productCard(x.p, x.shop)).join('') : emptyState({
+      emoji:'🔍', title:"Couldn't find that nearby.",
+      body:'Try a different search term, widen your distance filter, or ask nearby shops directly.',
+      actions:[{label:'Increase search radius to 20 km', act:'widen'},{label:'Request this product', nav:'new-request'}]
+    })}
+  </div>`;
+}
+
+// ---------- CUSTOMER: Product detail ----------
+function productView(){
+  const p = DB.products.find(x=>x.id===State.params.id);
+  if(!p) return emptyState({emoji:'📦', title:'Product not found', body:'It may have been removed by the shop.', actions:[{label:'Back to search', nav:'search'}]});
+  const shop = DB.shops.find(s=>s.id===p.shopId);
+  const dist = distanceFor(shop);
+  const fav = DB.favorites.some(f=>f.userId===currentUser().id && f.type==='product' && f.id===p.id);
+  const availText = {in_stock:'🟢 Available', low_stock:'🟡 Low stock — limited quantity', out_of_stock:'🔴 Currently out of stock'}[p.availability];
+  return `<div class="view">
+    <div class="backbar">
+      <button class="backbtn" data-back>${ICONS.back}</button>
+      <span class="small muted">Product</span>
+    </div>
+    <div class="gallery">${p.icon}</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px;">
+      <h1 style="font-size:20px;">${escapeHtml(p.name)}</h1>
+      <button class="btn-ghost" data-fav-product="${p.id}" style="padding:4px;">${ICONS.heart(fav)}</button>
+    </div>
+    <div class="p-price" style="font-size:22px;margin-bottom:6px;">${fmtMoney(p.price)}</div>
+    <div class="p-meta" style="margin-bottom:14px;">${availText}<span class="dot">·</span><span class="fresh" style="margin:0;">Updated ${timeAgo(p.lastUpdated)}</span></div>
+
+    <div class="panel">
+      ${p.brand?`<div class="kv-row"><span class="muted">Brand</span><span>${escapeHtml(p.brand)}</span></div>`:''}
+      ${p.model?`<div class="kv-row"><span class="muted">Model</span><span>${escapeHtml(p.model)}</span></div>`:''}
+      <div class="kv-row"><span class="muted">Condition</span><span>${escapeHtml(p.condition)}</span></div>
+      ${p.description?`<div class="kv-row" style="display:block;"><span class="muted">Description</span><p style="margin-top:6px;font-size:13.5px;line-height:1.5;">${escapeHtml(p.description)}</p></div>`:''}
+    </div>
+
+    <div class="panel" data-nav="shop" data-id="${shop.id}" style="cursor:pointer;">
+      <div class="s-card-top">
+        <div class="s-thumb">${CATEGORIES.find(c=>c.id===shop.category)?.icon}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;"><span class="p-title" style="max-width:none;">${escapeHtml(shop.name)}</span>${shop.verification==='verified'?`<span class="verified">✓</span>`:''}</div>
+          <div class="p-meta"><span class="stars">★ ${shop.rating||'New'}</span><span class="dot">·</span><span>📍 ${dist.toFixed(1)} km · ${escapeHtml(shop.address)}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-bottom:10px;">
+      <button class="btn btn-primary" data-chat-shop="${shop.id}" data-chat-product="${p.id}">💬 Chat with shop</button>
+      <button class="btn btn-outline" data-directions="${shop.id}">🧭 Directions</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-outline btn-sm" data-share="${p.id}">Share</button>
+      <button class="btn btn-outline btn-sm" data-report="product:${p.id}">Report</button>
+    </div>
+  </div>`;
+}
+
+// ---------- CUSTOMER: Shop detail ----------
+function shopView(){
+  const shop = DB.shops.find(s=>s.id===State.params.id);
+  if(!shop) return emptyState({emoji:'🏬', title:'Shop not found', body:'This shop may have been removed.', actions:[{label:'Back to search', nav:'search'}]});
+  const dist = distanceFor(shop);
+  const prods = DB.products.filter(p=>p.shopId===shop.id);
+  const revs = DB.reviews.filter(r=>r.shopId===shop.id).sort((a,b)=>b.date-a.date);
+  const fav = DB.favorites.some(f=>f.userId===currentUser().id && f.type==='shop' && f.id===shop.id);
+  const vBadge = {verified:'<span class="status-tag status-verified">✓ Verified</span>', active:'<span class="status-tag status-new">Active</span>', new:'<span class="status-tag status-new">New</span>', suspended:'<span class="status-tag status-suspended">Suspended</span>'}[shop.verification];
+  return `<div class="view">
+    <div class="backbar"><button class="backbtn" data-back>${ICONS.back}</button><span class="small muted">Shop</span></div>
+    <div class="gallery" style="aspect-ratio:16/9;">${CATEGORIES.find(c=>c.id===shop.category)?.icon}</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+      <h1 style="font-size:21px;">${escapeHtml(shop.name)}</h1>
+      <button class="btn-ghost" data-fav-shop="${shop.id}" style="padding:4px;">${ICONS.heart(fav)}</button>
+    </div>
+    <div class="p-meta" style="margin:6px 0 4px;">${vBadge}<span class="stars">★ ${shop.rating||'New'}</span><span class="dot">·</span><span>${shop.reviewCount} reviews</span></div>
+    <div class="p-meta" style="margin-bottom:14px;"><span>🟢 Open now</span><span class="dot">·</span><span>📍 ${dist.toFixed(1)} km</span><span class="dot">·</span><span>${escapeHtml(shop.hours)}</span></div>
+
+    <div class="btn-row" style="margin-bottom:16px;">
+      <button class="btn btn-outline" data-directions="${shop.id}">🧭 Directions</button>
+      <button class="btn btn-primary" data-chat-shop="${shop.id}">💬 Chat</button>
+    </div>
+
+    <div class="panel">
+      <p class="small" style="line-height:1.5;">${escapeHtml(shop.description)}</p>
+      <div class="kv-row"><span class="muted">Address</span><span style="text-align:right;">${escapeHtml(shop.address)}</span></div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>Products (${prods.length})</h2></div>
+      <div class="searchbar" style="margin-bottom:10px;"><input id="shop-search" placeholder="Search this shop..." data-shopid="${shop.id}"></div>
+      <div id="shop-prod-list">${prods.map(p=>productCardMini(p)).join('') || `<p class="small muted">No products listed yet.</p>`}</div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><h2>Reviews</h2><button class="link-btn" data-open="write-review" data-shopid="${shop.id}">Write a review</button></div>
+      ${revs.length ? revs.map(r=>reviewHtml(r)).join('') : `<p class="small muted">No reviews yet — be the first.</p>`}
+    </div>
+  </div>`;
+}
+function productCardMini(p){
+  const availBadge = p.availability==='in_stock' ? `<span class="badge avail">🟢</span>` : p.availability==='low_stock' ? `<span class="badge low">🟡</span>` : `<span class="badge unavail">🔴</span>`;
+  return `<div class="p-card" data-nav="product" data-id="${p.id}">
+    <div class="p-thumb">${p.icon}</div>
+    <div class="p-body">
+      <div class="p-title">${escapeHtml(p.name)}</div>
+      <div class="p-price">${fmtMoney(p.price)}</div>
+      <div class="p-meta">${availBadge}<span class="fresh" style="margin:0;">Updated ${timeAgo(p.lastUpdated)}</span></div>
+    </div>
+  </div>`;
+}
+function reviewHtml(r){
+  return `<div class="review">
+    <div class="review-top">
+      <div><span class="avatar">${escapeHtml(r.userName[0])}</span><strong style="font-size:13px;">${escapeHtml(r.userName)}</strong></div>
+      <span class="small muted">${timeAgo(r.date)}</span>
+    </div>
+    <div class="stars" style="margin-bottom:4px;">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+    <p class="small" style="line-height:1.5;">${escapeHtml(r.text)}</p>
+    ${r.reply?`<div style="margin-top:8px;background:var(--green-mist);border-radius:8px;padding:8px 10px;"><strong class="small">Shop reply:</strong><p class="small" style="margin-top:2px;">${escapeHtml(r.reply)}</p></div>`:''}
+  </div>`;
+}
+
+// ---------- Empty state helper ----------
+function emptyState({emoji,title,body,actions}){
+  return `<div class="view"><div class="empty-state">
+    <div class="emoji">${emoji}</div>
+    <h3>${escapeHtml(title)}</h3>
+    <p>${escapeHtml(body)}</p>
+    <div class="btn-row">${actions.map((a,i)=>`<button class="btn ${i===0?'btn-primary':'btn-outline'}" ${a.nav?`data-nav="${a.nav}"`:''} ${a.act?`data-act="${a.act}"`:''}>${escapeHtml(a.label)}</button>`).join('')}</div>
+  </div></div>`;
+}
+
+// ---------- CUSTOMER: Requests ----------
+function requestsView(){ return newRequestPromptOrList(); }
+function newRequestPromptOrList(){
+  return `<div class="view">
+    <h1 style="font-size:20px;margin-bottom:4px;">Product requests</h1>
+    <p class="small muted" style="margin-bottom:16px;">Can't find something nearby? Ask local shops directly.</p>
+    <button class="btn btn-primary" data-nav="new-request" style="margin-bottom:20px;">+ Request a product</button>
+    <div class="section-head"><h2>Your requests</h2></div>
+    ${myRequestsList()}
+  </div>`;
+}
+function myRequestsList(){
+  const mine = DB.requests.filter(r=>r.customerId===currentUser().id).sort((a,b)=>b.createdAt-a.createdAt);
+  if(!mine.length) return `<p class="small muted">You haven't requested anything yet.</p>`;
+  return mine.map(r=>`<div class="panel">
+    <div style="display:flex;justify-content:space-between;"><strong style="font-size:14px;">${escapeHtml(r.name)}</strong><span class="small muted">${timeAgo(r.createdAt)}</span></div>
+    ${r.description?`<p class="small muted" style="margin-top:4px;">${escapeHtml(r.description)}</p>`:''}
+    <p class="small" style="margin-top:8px;">${r.responses.length} shop${r.responses.length!==1?'s':''} responded</p>
+    ${r.responses.map(resp=>{
+      const shop = DB.shops.find(s=>s.id===resp.shopId);
+      return `<div class="list-row"><span>${escapeHtml(shop.name)}</span><span>${resp.available? fmtMoney(resp.price):'Not available'}</span></div>`;
+    }).join('')}
+  </div>`).join('');
+}
+function myRequestsView(){ return requestsView(); }
+function newRequestView(){
+  return `<div class="view">
+    <div class="backbar"><button class="backbtn" data-back>${ICONS.back}</button><span class="small muted">Request a product</span></div>
+    <div class="panel">
+      <div class="field"><label>Product name <span class="req">*</span></label><input id="rq-name" placeholder="e.g. Camping tent, 4-person"></div>
+      <div class="field"><label>Description (optional)</label><textarea id="rq-desc" placeholder="Any specific brand, size, or details"></textarea></div>
+      <div class="field"><label>Search radius</label>
+        <select id="rq-radius" class="select-native" style="width:100%;">
+          <option value="5">Within 5 km</option>
+          <option value="10" selected>Within 10 km</option>
+          <option value="20">Within 20 km</option>
+        </select>
+      </div>
+      <div class="field-hint" style="margin-bottom:14px;">Shops within this radius that sell similar products will be notified. Your exact location is never shared with shops.</div>
+      <button class="btn btn-primary" id="rq-submit">Send request</button>
+    </div>
+  </div>`;
+}
+
+// ---------- CUSTOMER: Account / Favorites ----------
+function accountView(){
+  const u = currentUser();
+  const favCount = DB.favorites.filter(f=>f.userId===u.id).length;
+  const reqCount = DB.requests.filter(r=>r.customerId===u.id).length;
+  return `<div class="view">
+    <h1 style="font-size:20px;margin-bottom:16px;">Your account</h1>
+    <div class="panel" style="display:flex;align-items:center;gap:12px;">
+      <span class="avatar" style="width:44px;height:44px;font-size:16px;">${u.name[0]}</span>
+      <div><strong style="font-size:15px;">${escapeHtml(u.name)}</strong><p class="small muted">${escapeHtml(u.email)}</p></div>
+    </div>
+    <div class="grid2" style="margin-bottom:16px;">
+      <div class="admin-stat" data-nav="favorites"><div class="num">${favCount}</div><div class="lbl">Saved items</div></div>
+      <div class="admin-stat" data-nav="requests"><div class="num">${reqCount}</div><div class="lbl">Requests sent</div></div>
+    </div>
+    <div class="panel" style="padding:0;">
+      <div class="list-tap" data-nav="favorites"><span>❤️ Favourites</span><span>›</span></div>
+      <div class="list-tap" data-nav="requests"><span>📝 Product requests</span><span>›</span></div>
+      <div class="list-tap" data-open="location"><span>📍 Location settings</span><span>›</span></div>
+      <div class="list-tap" data-open="privacy"><span>🔒 Privacy settings</span><span>›</span></div>
+      <div class="list-tap" data-open="notif"><span>🔔 Notifications</span><span>›</span></div>
+    </div>
+    <div class="panel" style="padding:0;">
+      <div class="list-tap" data-nav="sk-onboarding"><span>🏬 Become a shopkeeper</span><span>›</span></div>
+      <div class="list-tap"><span style="color:var(--red);">Log out</span><span></span></div>
+    </div>
+  </div>`;
+}
+function favoritesView(){
+  const u = currentUser();
+  const favs = DB.favorites.filter(f=>f.userId===u.id);
+  return `<div class="view">
+    <div class="backbar"><button class="backbtn" data-back>${ICONS.back}</button><span class="small muted">Favourites</span></div>
+    ${favs.length ? favs.map(f=>{
+      if(f.type==='product'){ const p=DB.products.find(x=>x.id===f.id); if(!p) return ''; return productCard(p, DB.shops.find(s=>s.id===p.shopId)); }
+      const s = DB.shops.find(x=>x.id===f.id); if(!s) return ''; return shopCard(s);
+    }).join('') : emptyState({emoji:'❤️', title:'No favourites yet', body:'Tap the heart icon on any product or shop to save it here.', actions:[{label:'Start exploring', nav:'search'}]})}
+  </div>`;
+}
+
+// ---------- CHAT ----------
+function chatListView(){
+  const u = currentUser();
+  const isShop = State.role==='shopkeeper';
+  const shopId = isShop ? u.shopId : null;
+  let convs = DB.conversations.filter(c => isShop ? c.shopId===shopId : c.customerId===u.id);
+  convs = convs.slice().sort((a,b)=> (b.messages.at(-1)?.time||0) - (a.messages.at(-1)?.time||0));
+  return `<div class="view">
+    <h1 style="font-size:20px;margin-bottom:14px;">Chats</h1>
+    ${convs.length ? convs.map(c=>{
+      const other = isShop ? {name: 'Customer'} : DB.shops.find(s=>s.id===c.shopId);
+      const last = c.messages.at(-1);
+      const unread = isShop ? c.unreadForShop : c.unreadForCustomer;
+      const icon = isShop ? '🙂' : (CATEGORIES.find(cc=>cc.id===other.category)?.icon || '🏬');
+      return `<div class="conv-item" data-nav="chat-thread" data-id="${c.id}">
+        <div class="conv-ico">${icon}</div>
+        <div class="conv-body">
+          <div class="conv-top"><span class="conv-name">${escapeHtml(other.name)}</span><span class="conv-time">${last?timeAgo(last.time):''}</span></div>
+          <div class="conv-preview">${last?escapeHtml(last.text):'No messages yet'}</div>
+        </div>
+        ${unread>0?`<span class="unread-dot"></span>`:''}
+      </div>`;
+    }).join('') : emptyState({emoji:'💬', title:'No conversations yet', body: isShop?'When customers message you about a product, it will show up here.':'Start a chat from any product or shop page.', actions:[{label:'Browse products', nav:'search'}]})}
+  </div>`;
+}
+function chatThreadView(){
+  const c = DB.conversations.find(x=>x.id===State.params.id);
+  if(!c) return emptyState({emoji:'💬', title:'Conversation not found', body:'', actions:[{label:'Back to chats', nav:'chat-list'}]});
+  const isShop = State.role==='shopkeeper';
+  const shop = DB.shops.find(s=>s.id===c.shopId);
+  const product = DB.products.find(p=>p.id===c.productId);
+  if(isShop) c.unreadForShop = 0; else c.unreadForCustomer = 0;
+  const title = isShop ? 'Customer' : shop.name;
+  return `<div class="chat-screen">
+    <div class="topbar" style="position:sticky;">
+      <div class="topbar-row">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button class="backbtn" data-back>${ICONS.back}</button>
+          <div>
+            <div style="font-weight:600;font-size:15px;">${escapeHtml(title)}</div>
+            <div class="small muted">${isShop?'Customer enquiry':'Usually replies within an hour'}</div>
+          </div>
+        </div>
+        <button class="link-btn" data-report="conversation:${c.id}">Report</button>
+      </div>
+    </div>
+    ${product?`<div class="ref-card"><span style="font-size:20px;">${product.icon}</span><div><strong>${escapeHtml(product.name)}</strong><div class="muted">${fmtMoney(product.price)}</div></div></div>`:''}
+    <div class="chat-messages" id="chat-scroll">
+      ${c.messages.map(m=>{
+        const mine = (isShop && m.sender==='shop') || (!isShop && m.sender==='customer');
+        return `<div class="msg ${mine?'out':'in'}">${escapeHtml(m.text)}<div class="msg-time">${new Date(m.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div></div>`;
+      }).join('')}
+    </div>
+    <div class="chat-input-row">
+      <input id="chat-input" placeholder="Type a message..." />
+      <button class="sendbtn" id="chat-send" data-convid="${c.id}">${ICONS.send}</button>
+    </div>
+  </div>`;
+}
+
+// ---------- SHOPKEEPER views ----------
+function ensureShop(){
+  const u = currentUser();
+  if(!u.shopId){ nav('sk-onboarding', {}, true); return null; }
+  return DB.shops.find(s=>s.id===u.shopId);
+}
+function skOnboardingView(){
+  return `<div class="view">
+    <h1 style="font-size:22px;margin-bottom:6px;">Create your shop</h1>
+    <p class="small muted" style="margin-bottom:18px;">Takes about 2 minutes. You can add products right after.</p>
+    <div class="panel">
+      <div class="field"><label>Shop name <span class="req">*</span></label><input id="ob-name" placeholder="e.g. Kadam Electronics"></div>
+      <div class="field"><label>Category <span class="req">*</span></label>
+        <select id="ob-cat" class="select-native" style="width:100%;">${CATEGORIES.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Address <span class="req">*</span></label><input id="ob-addr" placeholder="Shop address"></div>
+      <div class="field"><label>Short description (optional)</label><textarea id="ob-desc" placeholder="Tell customers what makes your shop worth visiting"></textarea></div>
+      <button class="btn btn-primary" id="ob-submit">Create shop &amp; continue</button>
+    </div>
+  </div>`;
+}
+function skDashboard(){
+  const u = currentUser();
+  if(!u.shopId) return skOnboardingView();
+  const shop = DB.shops.find(s=>s.id===u.shopId);
+  const prods = DB.products.filter(p=>p.shopId===shop.id);
+  const convs = DB.conversations.filter(c=>c.shopId===shop.id);
+  const reqs = DB.requests.filter(r=>r.responses.some(x=>x.shopId===shop.id) || nearbyRequestFor(shop, r));
+  return `<div class="view">
+    <h1 style="font-size:20px;">${escapeHtml(shop.name)}</h1>
+    <p class="small muted" style="margin-bottom:14px;">${{new:'New — add products to get discovered',active:'Active on Corner',verified:'Verified shop',suspended:'⚠ Suspended — contact support'}[shop.verification]}</p>
+    <div class="grid2" style="margin-bottom:16px;">
+      <div class="admin-stat"><div class="num">${prods.length}</div><div class="lbl">Products listed</div></div>
+      <div class="admin-stat"><div class="num">${shop.rating||'—'}</div><div class="lbl">${shop.reviewCount} reviews</div></div>
+      <div class="admin-stat" data-nav="chat-list"><div class="num">${convs.length}</div><div class="lbl">Conversations</div></div>
+      <div class="admin-stat" data-nav="sk-requests"><div class="num">${reqs.length}</div><div class="lbl">Product requests</div></div>
+    </div>
+    <div class="panel">
+      <div class="section-head"><h2 style="font-size:15px;">Quick actions</h2></div>
+      <div class="btn-row" style="margin-bottom:8px;">
+        <button class="btn btn-primary" data-nav="sk-product-form">+ Add product</button>
+        <button class="btn btn-outline" data-nav="sk-settings">Edit shop</button>
+      </div>
+    </div>
+    <div class="section-head"><h2>Basic analytics</h2></div>
+    <div class="panel">
+      <div class="kv-row"><span class="muted">Profile views (last 7 days)</span><span>${42 + prods.length*3}</span></div>
+      <div class="kv-row"><span class="muted">Products with stale prices (7+ days)</span><span>${prods.filter(p=>now()-p.lastUpdated>7*864e5).length}</span></div>
+      <div class="kv-row"><span class="muted">Out of stock items</span><span>${prods.filter(p=>p.availability==='out_of_stock').length}</span></div>
+    </div>
+  </div>`;
+}
+function nearbyRequestFor(shop, r){ return true; } // simplified radius match for demo
+function skProductsView(){
+  const shop = ensureShop(); if(!shop) return '';
+  const prods = DB.products.filter(p=>p.shopId===shop.id);
+  return `<div class="view">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <h1 style="font-size:20px;">Your products</h1>
+      <button class="btn btn-primary btn-sm" data-nav="sk-product-form">+ Add</button>
+    </div>
+    ${prods.length ? prods.map(p=>skProductRow(p)).join('') : emptyState({emoji:'📦', title:'No products yet', body:'Add your first product so customers can find it.', actions:[{label:'Add a product', nav:'sk-product-form'}]})}
+  </div>`;
+}
+function skProductRow(p){
+  const availLabel = {in_stock:'In stock', low_stock:'Low stock', out_of_stock:'Out of stock'}[p.availability];
+  return `<div class="p-card">
+    <div class="p-thumb">${p.icon}</div>
+    <div class="p-body">
+      <div class="p-title">${escapeHtml(p.name)}</div>
+      <div class="p-price">${fmtMoney(p.price)}</div>
+      <div class="fresh">Updated ${timeAgo(p.lastUpdated)} · ${availLabel}</div>
+      <div class="btn-row" style="margin-top:8px;">
+        <button class="btn btn-outline btn-sm" data-edit-product="${p.id}">Edit</button>
+        <button class="btn btn-outline btn-sm" data-cycle-avail="${p.id}">Toggle status</button>
+        <button class="btn btn-danger btn-sm" data-del-product="${p.id}">Delete</button>
+      </div>
+    </div>
+  </div>`;
+}
+function skProductFormView(){
+  const editId = State.params.id;
+  const p = editId ? DB.products.find(x=>x.id===editId) : null;
+  return `<div class="view">
+    <div class="backbar"><button class="backbtn" data-back>${ICONS.back}</button><span class="small muted">${p?'Edit product':'Add product'}</span></div>
+    <div class="panel">
+      <div class="field"><label>Product name <span class="req">*</span></label><input id="pf-name" value="${p?escapeHtml(p.name):''}" placeholder="e.g. Wireless Headphones"></div>
+      <div class="field"><label>Price (₹) <span class="req">*</span></label><input id="pf-price" type="number" min="0" value="${p?p.price:''}" placeholder="0"></div>
+      <div class="field"><label>Availability <span class="req">*</span></label>
+        <select id="pf-avail" class="select-native" style="width:100%;">
+          <option value="in_stock" ${p?.availability==='in_stock'?'selected':''}>In stock</option>
+          <option value="low_stock" ${p?.availability==='low_stock'?'selected':''}>Low stock</option>
+          <option value="out_of_stock" ${p?.availability==='out_of_stock'?'selected':''}>Out of stock</option>
+        </select>
+      </div>
+      <div class="field-hint" style="margin:-4px 0 14px;">Required fields only above — everything below is optional.</div>
+      <div class="field"><label>Brand</label><input id="pf-brand" value="${p?escapeHtml(p.brand||''):''}"></div>
+      <div class="field"><label>Model</label><input id="pf-model" value="${p?escapeHtml(p.model||''):''}"></div>
+      <div class="field"><label>Description</label><textarea id="pf-desc">${p?escapeHtml(p.description||''):''}</textarea></div>
+      <button class="btn btn-primary" id="pf-submit" data-editid="${p?p.id:''}">${p?'Save changes':'Publish product'}</button>
+    </div>
+  </div>`;
+}
+function skRequestsView(){
+  const shop = ensureShop(); if(!shop) return '';
+  const reqs = DB.requests.slice().sort((a,b)=>b.createdAt-a.createdAt);
+  return `<div class="view">
+    <h1 style="font-size:20px;margin-bottom:4px;">Nearby product requests</h1>
+    <p class="small muted" style="margin-bottom:14px;">Customers looking for products near your shop.</p>
+    ${reqs.length ? reqs.map(r=>{
+      const already = r.responses.find(x=>x.shopId===shop.id);
+      return `<div class="panel">
+        <strong style="font-size:14px;">${escapeHtml(r.name)}</strong>
+        <p class="small muted" style="margin:4px 0;">${escapeHtml(r.description||'No extra details')} · requested ${timeAgo(r.createdAt)}</p>
+        ${already ? `<span class="status-tag status-verified">You responded: ${already.available?fmtMoney(already.price):'Not available'}</span>` :
+        `<div class="btn-row" style="margin-top:8px;">
+          <button class="btn btn-primary btn-sm" data-respond-req="${r.id}" data-avail="1">We have it</button>
+          <button class="btn btn-outline btn-sm" data-respond-req="${r.id}" data-avail="0">Not available</button>
+        </div>`}
+      </div>`;
+    }).join('') : emptyState({emoji:'📝', title:'No requests right now', body:'Customer product requests near your shop will appear here.', actions:[{label:'Back to dashboard', nav:'sk-dashboard'}]})}
+  </div>`;
+}
+function skSettingsView(){
+  const shop = ensureShop(); if(!shop) return '';
+  return `<div class="view">
+    <h1 style="font-size:20px;margin-bottom:14px;">Shop settings</h1>
+    <div class="panel">
+      <div class="field"><label>Shop name</label><input id="ss-name" value="${escapeHtml(shop.name)}"></div>
+      <div class="field"><label>Description</label><textarea id="ss-desc">${escapeHtml(shop.description||'')}</textarea></div>
+      <div class="field"><label>Address</label><input id="ss-addr" value="${escapeHtml(shop.address)}"></div>
+      <div class="field"><label>Opening hours</label><input id="ss-hours" value="${escapeHtml(shop.hours)}"></div>
+      <button class="btn btn-primary" id="ss-submit">Save changes</button>
+    </div>
+    <div class="panel">
+      <div class="kv-row"><span class="muted">Verification status</span><span class="status-tag ${shop.verification==='verified'?'status-verified':shop.verification==='suspended'?'status-suspended':'status-new'}">${shop.verification}</span></div>
+      <p class="small muted" style="margin-top:8px;">Verification is reviewed by the Corner team and confirms your shop's physical address and legitimacy.</p>
+    </div>
+    <button class="btn btn-outline" data-nav="sk-dashboard">Back to dashboard</button>
+  </div>`;
+}
+
+// ---------- ADMIN views ----------
+function adminDashboard(){
+  const stats = [
+    {n: DB.shops.length, l:'Total shops'},
+    {n: DB.shops.filter(s=>s.verification==='verified').length, l:'Verified shops'},
+    {n: DB.products.length, l:'Products listed'},
+    {n: DB.reports.filter(r=>r.status==='open').length, l:'Open reports'},
+    {n: DB.reviews.length, l:'Reviews'},
+    {n: DB.requests.length, l:'Product requests'},
+  ];
+  return `<div class="view">
+    <h1 style="font-size:20px;margin-bottom:14px;">Platform overview</h1>
+    <div class="grid2" style="margin-bottom:16px;">${stats.map(s=>`<div class="admin-stat"><div class="num">${s.n}</div><div class="lbl">${s.l}</div></div>`).join('')}</div>
+    <div class="section-head"><h2>Shops pending verification</h2></div>
+    ${DB.shops.filter(s=>s.verification==='new'||s.verification==='active').map(s=>`
+      <div class="list-row"><span>${escapeHtml(s.name)}</span>
+      <span><button class="btn btn-primary btn-sm" data-verify="${s.id}">Verify</button></span></div>`).join('') || `<p class="small muted">Nothing pending.</p>`}
+  </div>`;
+}
+function adminShopsView(){
+  return `<div class="view">
+    <h1 style="font-size:20px;margin-bottom:14px;">Manage shops</h1>
+    ${DB.shops.map(s=>`
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong style="font-size:14px;">${escapeHtml(s.name)}</strong>
+          <span class="status-tag ${s.verification==='verified'?'status-verified':s.verification==='suspended'?'status-suspended':'status-new'}">${s.verification}</span>
+        </div>
+        <p class="small muted" style="margin:4px 0 8px;">${escapeHtml(s.address)} · ${DB.products.filter(p=>p.shopId===s.id).length} products</p>
+        <div class="btn-row">
+          ${s.verification!=='verified'?`<button class="btn btn-outline btn-sm" data-verify="${s.id}">Verify</button>`:''}
+          ${s.verification!=='suspended'?`<button class="btn btn-danger btn-sm" data-suspend="${s.id}">Suspend</button>`:`<button class="btn btn-outline btn-sm" data-unsuspend="${s.id}">Reinstate</button>`}
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+function adminReportsView(){
+  return `<div class="view">
+    <h1 style="font-size:20px;margin-bottom:14px;">Reports</h1>
+    ${DB.reports.length ? DB.reports.slice().sort((a,b)=>b.createdAt-a.createdAt).map(r=>`
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;"><strong style="font-size:13.5px;">${escapeHtml(r.type)}</strong><span class="status-tag ${r.status==='open'?'status-pending':'status-verified'}">${r.status}</span></div>
+        <p class="small muted" style="margin:4px 0 8px;">${escapeHtml(r.reason)} · ${timeAgo(r.createdAt)}</p>
+        ${r.status==='open'?`<div class="btn-row"><button class="btn btn-outline btn-sm" data-resolve-report="${r.id}">Mark resolved</button></div>`:''}
+      </div>`).join('') : emptyState({emoji:'🚩', title:'No reports', body:'User-submitted reports about listings, reviews or conversations will appear here.', actions:[{label:'Back to overview', nav:'admin-dashboard'}]})}
+  </div>`;
+}
+function adminReviewsView(){
+  return `<div class="view">
+    <h1 style="font-size:20px;margin-bottom:14px;">Moderate reviews</h1>
+    ${DB.reviews.slice().sort((a,b)=>b.date-a.date).map(r=>{
+      const shop = DB.shops.find(s=>s.id===r.shopId);
+      return `<div class="panel">
+        <div style="display:flex;justify-content:space-between;"><strong style="font-size:13.5px;">${escapeHtml(shop.name)}</strong><span class="small muted">${timeAgo(r.date)}</span></div>
+        <div class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+        <p class="small" style="margin:4px 0 8px;">${escapeHtml(r.text)}</p>
+        <div class="btn-row"><button class="btn btn-danger btn-sm" data-del-review="${r.id}">Remove review</button></div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+// ---------- Modals ----------
+let modalState = null; // {type, ...}
+function modalHtml(){
+  if(!modalState) return '';
+  if(modalState.type==='location') return modal(`
+    <h3 style="margin-bottom:14px;">Location settings</h3>
+    <p class="small muted" style="margin-bottom:14px;">Corner uses your location to show nearby shops. You can also set it manually — the site works fully without location access.</p>
+    <button class="btn btn-outline" id="use-my-location" style="margin-bottom:10px;">📍 Use my current location</button>
+    ${['Bandra West, Mumbai','Andheri East, Mumbai','Koramangala, Bengaluru','Connaught Place, Delhi'].map(l=>`<div class="list-tap" data-setloc="${l}"><span>${l}</span><span>${DB.customerLocation.label===l?'✓':''}</span></div>`).join('')}
+  `);
+  if(modalState.type==='privacy') return modal(`
+    <h3 style="margin-bottom:14px;">Privacy settings</h3>
+    <div class="toggle-row"><span class="small">Share precise location with search</span><button class="switch on"></button></div>
+    <div class="toggle-row"><span class="small">Allow shops to see my past searches</span><button class="switch"></button></div>
+    <div class="toggle-row"><span class="small">Personalized recommendations</span><button class="switch on"></button></div>
+    <p class="field-hint" style="margin:10px 0 14px;">Your exact location is never shared with shopkeepers — only approximate distance.</p>
+    <button class="btn btn-outline btn-danger" data-close-modal style="margin-bottom:8px;">Delete my account &amp; data</button>
+  `);
+  if(modalState.type==='notif') return modal(`
+    <h3 style="margin-bottom:14px;">Notifications</h3>
+    <div class="toggle-row"><span class="small">New chat messages</span><button class="switch on"></button></div>
+    <div class="toggle-row"><span class="small">Responses to my requests</span><button class="switch on"></button></div>
+    <div class="toggle-row"><span class="small">Price drops on saved items</span><button class="switch"></button></div>
+  `);
+  if(modalState.type==='write-review') return modal(`
+    <h3 style="margin-bottom:14px;">Write a review</h3>
+    <div class="field"><label>Rating</label>
+      <div style="display:flex;gap:6px;" id="star-picker">${[1,2,3,4,5].map(n=>`<span data-star="${n}" style="font-size:26px;cursor:pointer;color:${n<= (modalState.rating||0)?'var(--gold)':'#DEDACC'};">★</span>`).join('')}</div>
+    </div>
+    <div class="field"><label>Your review</label><textarea id="rev-text" placeholder="Share your experience with this shop"></textarea></div>
+    <button class="btn btn-primary" id="rev-submit" data-shopid="${modalState.shopId}">Submit review</button>
+  `);
+  if(modalState.type==='report') return modal(`
+    <h3 style="margin-bottom:14px;">Report a problem</h3>
+    <div class="field"><label>What's wrong?</label>
+      <select id="report-reason" class="select-native" style="width:100%;">
+        <option>Incorrect price or availability</option>
+        <option>Suspicious or fake listing</option>
+        <option>Inappropriate content</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" id="report-submit" data-target="${modalState.target}">Submit report</button>
+  `);
+  return '';
+}
+function modal(inner){
+  return `<div id="modal-root-inner"><div class="modal-bg" data-close-modal>
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      ${inner}
+    </div>
+  </div></div>`;
+}
+
+// ---------- Event binding ----------
+function bindEvents(root){
+  root.querySelectorAll('[data-role]').forEach(el=>el.onclick = ()=>{ State.role = el.dataset.role; State.view = el.dataset.role==='customer'?'home':el.dataset.role==='shopkeeper'?'sk-dashboard':'admin-dashboard'; State.history=[]; render(); });
+  root.querySelectorAll('[data-nav]').forEach(el=>el.onclick = ()=>{ const id = el.dataset.id; nav(el.dataset.nav, id?{id}:{}); });
+  root.querySelectorAll('[data-back]').forEach(el=>el.onclick = back);
+  root.querySelectorAll('[data-cat]').forEach(el=>el.onclick = ()=>{ State.search.category = el.dataset.cat; State.search.q=''; nav('search'); });
+  root.querySelectorAll('[data-setcat]').forEach(el=>el.onclick = ()=>{ State.search.category = el.dataset.setcat || null; render(); });
+  root.querySelectorAll('[data-toggle]').forEach(el=>el.onclick = ()=>{
+    const t = el.dataset.toggle;
+    if(t==='availOnly') State.search.filters.availOnly = !State.search.filters.availOnly;
+    if(t==='openNow') State.search.filters.openNow = !State.search.filters.openNow;
+    if(t==='minRating') State.search.filters.minRating = State.search.filters.minRating>=4?0:4;
+    if(t==='near') State.search.filters.maxDistance = State.search.filters.maxDistance<=5?20:5;
+    render();
+  });
+  const sortSel = root.querySelector('#sort-select');
+  if(sortSel) sortSel.onchange = ()=>{ State.search.sort = sortSel.value; render(); };
+  const searchInput = root.querySelector('#search-input');
+  if(searchInput){
+    searchInput.oninput = ()=>{ State.search.q = searchInput.value; renderResultsOnly(); };
+    searchInput.focus(); searchInput.selectionStart = searchInput.value.length;
+  }
+  const heroSearch = root.querySelector('#hero-search');
+  if(heroSearch) heroSearch.onclick = ()=> nav('search');
+  const shopSearch = root.querySelector('#shop-search');
+  if(shopSearch) shopSearch.oninput = ()=>{
+    const q = shopSearch.value.toLowerCase();
+    const list = DB.products.filter(p=>p.shopId===shopSearch.dataset.shopid && p.name.toLowerCase().includes(q));
+    document.getElementById('shop-prod-list').innerHTML = list.map(p=>productCardMini(p)).join('') || `<p class="small muted">No matches in this shop.</p>`;
+    bindEvents(document.getElementById('shop-prod-list'));
+  };
+
+  // favorites
+  root.querySelectorAll('[data-fav-product]').forEach(el=>el.onclick=(e)=>{ e.stopPropagation(); toggleFav('product', el.dataset.favProduct); });
+  root.querySelectorAll('[data-fav-shop]').forEach(el=>el.onclick=(e)=>{ e.stopPropagation(); toggleFav('shop', el.dataset.favShop); });
+
+  // chat entry points
+  root.querySelectorAll('[data-chat-shop]').forEach(el=>el.onclick=(e)=>{ e.stopPropagation(); startOrOpenChat(el.dataset.chatShop, el.dataset.chatProduct||null); });
+
+  root.querySelectorAll('[data-directions]').forEach(el=>el.onclick=(e)=>{ e.stopPropagation(); showToast('Opening directions to the shop...'); });
+  root.querySelectorAll('[data-share]').forEach(el=>el.onclick=(e)=>{ e.stopPropagation(); showToast('Link copied to share.'); });
+  root.querySelectorAll('[data-report]').forEach(el=>el.onclick=(e)=>{ e.stopPropagation(); modalState={type:'report', target:el.dataset.report}; render(); });
+
+  // location
+  root.querySelectorAll('[data-open="location"]').forEach(el=>el.onclick=()=>{ modalState={type:'location'}; render(); });
+  root.querySelectorAll('[data-open="privacy"]').forEach(el=>el.onclick=()=>{ modalState={type:'privacy'}; render(); });
+  root.querySelectorAll('[data-open="notif"]').forEach(el=>el.onclick=()=>{ modalState={type:'notif'}; render(); });
+  root.querySelectorAll('[data-open="write-review"]').forEach(el=>el.onclick=()=>{ modalState={type:'write-review', shopId:el.dataset.shopid, rating:5}; render(); });
+  root.querySelectorAll('[data-close-modal]').forEach(el=>el.onclick=()=>{ modalState=null; render(); });
+  root.querySelectorAll('[data-setloc]').forEach(el=>el.onclick=()=>{ DB.customerLocation.label = el.dataset.setloc; modalState=null; render(); });
+  const useLoc = root.querySelector('#use-my-location');
+  if(useLoc) useLoc.onclick = ()=>{
+    if(!navigator.geolocation){ showToast('Location not supported on this device.'); return; }
+    useLoc.textContent = 'Locating...';
+    navigator.geolocation.getCurrentPosition(
+      pos=>{ DB.customerLocation.lat=pos.coords.latitude; DB.customerLocation.lng=pos.coords.longitude; DB.customerLocation.label='Current location'; DB.customerLocation.permission='granted'; modalState=null; render(); },
+      err=>{ DB.customerLocation.permission='denied'; showToast('Location permission denied — you can still search by area.'); modalState=null; render(); }
+    );
+  };
+  root.querySelectorAll('[data-star]').forEach(el=>el.onclick=()=>{ modalState.rating = Number(el.dataset.star); render(); });
+  const revSubmit = root.querySelector('#rev-submit');
+  if(revSubmit) revSubmit.onclick = ()=>{
+    const text = document.getElementById('rev-text').value.trim();
+    if(!text){ showToast('Please write a few words about your experience.'); return; }
+    const u = currentUser();
+    DB.reviews.unshift({id:uid('rev'), shopId:revSubmit.dataset.shopid, userId:u.id, userName:u.name, rating: modalState.rating||5, text, date: now(), reply:null});
+    window._recalcRating(revSubmit.dataset.shopid);
+    modalState = null; showToast('Review posted.'); render();
+  };
+  const reportSubmit = root.querySelector('#report-submit');
+  if(reportSubmit) reportSubmit.onclick = ()=>{
+    const reason = document.getElementById('report-reason').value;
+    DB.reports.push({id:uid('rep'), type:reportSubmit.dataset.target, reason, status:'open', createdAt:now()});
+    modalState = null; showToast('Thanks — our team will review this.'); render();
+  };
+
+  // requests
+  const rqSubmit = root.querySelector('#rq-submit');
+  if(rqSubmit) rqSubmit.onclick = ()=>{
+    const name = document.getElementById('rq-name').value.trim();
+    if(!name){ showToast('Please enter a product name.'); return; }
+    DB.requests.push({id:uid('req'), customerId: currentUser().id, name, description: document.getElementById('rq-desc').value.trim(), radius: Number(document.getElementById('rq-radius').value), createdAt: now(), responses:[]});
+    showToast('Request sent to nearby shops.'); nav('requests', {}, true);
+  };
+  root.querySelectorAll('[data-act="widen"]').forEach(el=>el.onclick=()=>{ State.search.filters.maxDistance=20; render(); });
+
+  // chat send
+  const chatSend = root.querySelector('#chat-send');
+  if(chatSend){
+    const doSend = ()=>{
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim(); if(!text) return;
+      const conv = DB.conversations.find(c=>c.id===chatSend.dataset.convid);
+      const sender = State.role==='shopkeeper' ? 'shop':'customer';
+      conv.messages.push({sender, text, time: now()});
+      if(sender==='customer') conv.unreadForShop++; else conv.unreadForCustomer++;
+      input.value='';
+      render();
+      // auto-scroll
+      const scroll = document.getElementById('chat-scroll'); if(scroll) scroll.scrollTop = scroll.scrollHeight;
+    };
+    chatSend.onclick = doSend;
+    const chatInput = root.querySelector('#chat-input');
+    if(chatInput){ chatInput.onkeydown = (e)=>{ if(e.key==='Enter') doSend(); }; chatInput.focus(); }
+    const scroll = document.getElementById('chat-scroll'); if(scroll) scroll.scrollTop = scroll.scrollHeight;
+  }
+
+  // shopkeeper onboarding
+  const obSubmit = root.querySelector('#ob-submit');
+  if(obSubmit) obSubmit.onclick = ()=>{
+    const name = document.getElementById('ob-name').value.trim();
+    const addr = document.getElementById('ob-addr').value.trim();
+    if(!name || !addr){ showToast('Shop name and address are required.'); return; }
+    const shop = mkShop({name, category: document.getElementById('ob-cat').value, address: addr, description: document.getElementById('ob-desc').value.trim(), ownerId: currentUser().id});
+    DB.shops.push(shop);
+    currentUser().shopId = shop.id;
+    showToast('Shop created!'); nav('sk-product-form', {}, true);
+  };
+
+  // shopkeeper products
+  root.querySelectorAll('[data-edit-product]').forEach(el=>el.onclick=()=>nav('sk-product-form', {id: el.dataset.editProduct}));
+  root.querySelectorAll('[data-cycle-avail]').forEach(el=>el.onclick=()=>{
+    const p = DB.products.find(x=>x.id===el.dataset.cycleAvail);
+    const order = ['in_stock','low_stock','out_of_stock'];
+    p.availability = order[(order.indexOf(p.availability)+1)%order.length];
+    p.lastUpdated = now(); showToast('Availability updated.'); render();
+  });
+  root.querySelectorAll('[data-del-product]').forEach(el=>el.onclick=()=>{
+    if(!confirm('Delete this product?')) return;
+    DB.products = DB.products.filter(x=>x.id!==el.dataset.delProduct);
+    showToast('Product deleted.'); render();
+  });
+  const pfSubmit = root.querySelector('#pf-submit');
+  if(pfSubmit) pfSubmit.onclick = ()=>{
+    const name = document.getElementById('pf-name').value.trim();
+    const price = Number(document.getElementById('pf-price').value);
+    if(!name || !price || price<=0){ showToast('Product name and a valid price are required.'); return; }
+    const shop = DB.shops.find(s=>s.id===currentUser().shopId);
+    const data = {
+      name, price, availability: document.getElementById('pf-avail').value,
+      brand: document.getElementById('pf-brand').value.trim(), model: document.getElementById('pf-model').value.trim(),
+      description: document.getElementById('pf-desc').value.trim(), lastUpdated: now(),
+    };
+    if(pfSubmit.dataset.editid){
+      Object.assign(DB.products.find(x=>x.id===pfSubmit.dataset.editid), data);
+      showToast('Product updated.');
+    } else {
+      DB.products.push(Object.assign({id:uid('prod'), shopId:shop.id, currency:'₹', condition:'New', category:shop.category, icon:'🏷️'}, data));
+      showToast('Product published.');
+    }
+    nav('sk-products', {}, true);
+  };
+  const ssSubmit = root.querySelector('#ss-submit');
+  if(ssSubmit) ssSubmit.onclick = ()=>{
+    const shop = DB.shops.find(s=>s.id===currentUser().shopId);
+    shop.name = document.getElementById('ss-name').value.trim() || shop.name;
+    shop.description = document.getElementById('ss-desc').value.trim();
+    shop.address = document.getElementById('ss-addr').value.trim() || shop.address;
+    shop.hours = document.getElementById('ss-hours').value.trim() || shop.hours;
+    showToast('Shop settings saved.'); render();
+  };
+  root.querySelectorAll('[data-respond-req]').forEach(el=>el.onclick=()=>{
+    const req = DB.requests.find(x=>x.id===el.dataset.respondReq);
+    const shop = DB.shops.find(s=>s.id===currentUser().shopId);
+    const available = el.dataset.avail==='1';
+    let price = null;
+    if(available){ price = Number(prompt('What price would you like to quote (₹)?','')||0); if(!price){ showToast('Response cancelled.'); return; } }
+    req.responses.push({shopId: shop.id, available, price});
+    showToast('Response sent to customer.'); render();
+  });
+
+  // admin
+  root.querySelectorAll('[data-verify]').forEach(el=>el.onclick=()=>{ DB.shops.find(s=>s.id===el.dataset.verify).verification='verified'; showToast('Shop verified.'); render(); });
+  root.querySelectorAll('[data-suspend]').forEach(el=>el.onclick=()=>{ if(confirm('Suspend this shop?')){ DB.shops.find(s=>s.id===el.dataset.suspend).verification='suspended'; showToast('Shop suspended.'); render(); } });
+  root.querySelectorAll('[data-unsuspend]').forEach(el=>el.onclick=()=>{ DB.shops.find(s=>s.id===el.dataset.unsuspend).verification='active'; showToast('Shop reinstated.'); render(); });
+  root.querySelectorAll('[data-resolve-report]').forEach(el=>el.onclick=()=>{ DB.reports.find(r=>r.id===el.dataset.resolveReport).status='resolved'; showToast('Report resolved.'); render(); });
+  root.querySelectorAll('[data-del-review]').forEach(el=>el.onclick=()=>{
+    if(!confirm('Remove this review?')) return;
+    const rev = DB.reviews.find(r=>r.id===el.dataset.delReview);
+    DB.reviews = DB.reviews.filter(r=>r.id!==el.dataset.delReview);
+    window._recalcRating(rev.shopId);
+    showToast('Review removed.'); render();
+  });
+}
+
+function renderResultsOnly(){ render(); const si = document.getElementById('search-input'); if(si){ si.focus(); si.selectionStart = si.value.length; } }
+
+function toggleFav(type, id){
+  const u = currentUser();
+  const idx = DB.favorites.findIndex(f=>f.userId===u.id && f.type===type && f.id===id);
+  if(idx>-1) DB.favorites.splice(idx,1); else DB.favorites.push({userId:u.id, type, id});
+  render();
+}
+function startOrOpenChat(shopId, productId){
+  const u = currentUser();
+  let conv = DB.conversations.find(c=>c.customerId===u.id && c.shopId===shopId && (!productId || c.productId===productId));
+  if(!conv){
+    conv = {id:uid('conv'), customerId:u.id, shopId, productId, unreadForCustomer:0, unreadForShop:1, messages:[
+      {sender:'customer', text: productId ? `Hi, is this still available?` : `Hi, I had a question about your shop.`, time: now()}
+    ]};
+    DB.conversations.push(conv);
+  }
+  nav('chat-thread', {id: conv.id});
+}
+
+// initial mount
+document.body.insertAdjacentHTML('beforeend', `<div id="modal-root"></div>`);
+render();
+</script>
+</body>
+</html>
